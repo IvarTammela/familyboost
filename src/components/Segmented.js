@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { colors, typography } from '../theme/colors';
+import { colors, typography, radius } from '../theme/colors';
 
 export default function Segmented({ options, value, onChange, size = 'md' }) {
   return (
@@ -27,26 +27,28 @@ export default function Segmented({ options, value, onChange, size = 'md' }) {
 const styles = StyleSheet.create({
   wrap: {
     flexDirection: 'row',
-    backgroundColor: colors.primarySoft,
-    borderRadius: 10,
-    padding: 3,
+    backgroundColor: colors.bgAlt,
+    borderRadius: radius.md,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  wrapSm: { padding: 2 },
+  wrapSm: { padding: 3 },
   btn: {
     flex: 1,
-    paddingVertical: 9,
+    paddingVertical: 10,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: radius.sm,
   },
   btnActive: {
-    backgroundColor: colors.card,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 2,
-    elevation: 1,
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 2,
   },
   text: { ...typography.bodyStrong, color: colors.textMuted, fontSize: 13 },
   textSm: { fontSize: 12 },
-  textActive: { color: colors.text },
+  textActive: { color: '#fff', fontWeight: '700' },
 });

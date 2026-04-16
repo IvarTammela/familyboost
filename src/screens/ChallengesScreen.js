@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, categoryMeta, typography, radius, spacing } from '../theme/colors';
+import { colors, categoryMeta, typography, radius, spacing, shadow } from '../theme/colors';
 import { useStore } from '../data/store';
 import FormModal from '../components/FormModal';
 import { TextField, NumberField, CategoryPicker, OptionPicker } from '../components/Field';
@@ -42,6 +42,7 @@ function PersonalTab() {
 
       {Object.keys(groups).length === 0 && (
         <View style={styles.empty}>
+          <Text style={styles.emptyEmoji}>🌱</Text>
           <Text style={styles.emptyText}>Pole ühtegi ülesannet</Text>
         </View>
       )}
@@ -51,16 +52,18 @@ function PersonalTab() {
           const meta = categoryMeta[cat];
           return (
             <View key={cat} style={styles.group}>
-              <View style={styles.groupHeader}>
-                <View style={[styles.groupDot, { backgroundColor: meta.color }]} />
-                <Text style={styles.groupTitle}>{meta.label.toUpperCase()}</Text>
-                <Text style={styles.groupCount}>{items.length}</Text>
+              <View style={[styles.groupHeader, { backgroundColor: meta.soft }]}>
+                <Text style={styles.groupEmoji}>{meta.emoji}</Text>
+                <Text style={[styles.groupTitle, { color: meta.color }]}>{meta.label}</Text>
+                <Text style={[styles.groupCount, { color: meta.color }]}>{items.length}</Text>
               </View>
               {items.map((c) => (
                 <View key={c.id} style={styles.item}>
                   <Text style={styles.itemTitle}>{c.title}</Text>
                   {c.source === 'custom' && (
-                    <Text style={styles.customBadge}>MINU</Text>
+                    <View style={styles.customBadge}>
+                      <Text style={styles.customBadgeText}>minu</Text>
+                    </View>
                   )}
                 </View>
               ))}
@@ -80,6 +83,7 @@ function FamilyTab() {
     <View>
       {state.familyChallenges.length === 0 && (
         <View style={styles.empty}>
+          <Text style={styles.emptyEmoji}>🌱</Text>
           <Text style={styles.emptyTitle}>Pole pereülesandeid</Text>
           <Text style={styles.emptyText}>Vajuta "+ Lisa" et luua esimene</Text>
         </View>
@@ -92,11 +96,16 @@ function FamilyTab() {
           <View key={item.id} style={styles.famCard}>
             <View style={styles.famHeader}>
               <Text style={styles.famTitle}>{item.title}</Text>
-              <Text style={styles.famPeriod}>{item.periodDays} päeva</Text>
+              <View style={styles.famPeriodBadge}>
+                <Text style={styles.famPeriodText}>{item.periodDays} p</Text>
+              </View>
             </View>
-            <Text style={styles.famReward}>Preemia: {item.reward}</Text>
+            <View style={styles.rewardBox}>
+              <Text style={styles.rewardEmoji}>🎁</Text>
+              <Text style={styles.rewardText}>{item.reward}</Text>
+            </View>
             <View style={{ marginTop: spacing.md }}>
-              <ProgressBar value={pct} color={colors.success} />
+              <ProgressBar value={pct} color={colors.success} height={10} />
             </View>
             <Text style={styles.famPct}>{pct}% valmis</Text>
           </View>
@@ -155,7 +164,7 @@ function FamilyChallengeForm({ state, onSubmitted, onCancel }) {
   };
 
   const assignOptions = [
-    { value: 'all', label: 'Kogu pere' },
+    { value: 'all', label: '👪 Kogu pere' },
     ...state.family.members.map((m) => ({ value: m.id, label: m.name })),
   ];
 
@@ -163,7 +172,7 @@ function FamilyChallengeForm({ state, onSubmitted, onCancel }) {
     <FormModal visible title="Lisa pereülesanne" onClose={onCancel} onSubmit={submit} submitDisabled={!canSubmit}>
       <TextField label="Ülesanne" value={title} onChangeText={setTitle} placeholder="nt Pesen nõud kohe peale sööki" />
       <NumberField label="Periood (päevades)" value={periodDays} onChangeText={setPeriodDays} placeholder="7" />
-      <TextField label="Preemia" value={reward} onChangeText={setReward} placeholder="nt Pere SPA-reis" />
+      <TextField label="Preemia 🎁" value={reward} onChangeText={setReward} placeholder="nt Pere SPA-reis" />
       <OptionPicker label="Kellele?" value={assignedTo} onChange={setAssignedTo} options={assignOptions} />
     </FormModal>
   );
@@ -179,7 +188,7 @@ export default function ChallengesScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.pageLabel}>ÜLESANDED</Text>
+            <Text style={styles.pageLabel}>📋 ÜLESANDED</Text>
             <Text style={styles.title}>
               {tab === 'personal' ? 'Ülesannete kogu' : 'Pereülesanded'}
             </Text>
@@ -187,9 +196,9 @@ export default function ChallengesScreen() {
           <TouchableOpacity
             style={styles.primaryBtn}
             onPress={() => setOpenForm(tab)}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
-            <Ionicons name="add" size={18} color="#fff" />
+            <Ionicons name="add" size={20} color="#fff" />
             <Text style={styles.primaryBtnText}>Lisa</Text>
           </TouchableOpacity>
         </View>
@@ -231,42 +240,60 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   container: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
   header: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.lg },
-  pageLabel: { ...typography.captionStrong, color: colors.textMuted },
+  pageLabel: { ...typography.captionStrong, color: colors.primary },
   title: { ...typography.title, color: colors.text, marginTop: 2 },
   primaryBtn: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors.primary, paddingHorizontal: 14, paddingVertical: 10,
-    borderRadius: radius.sm,
+    backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 11,
+    borderRadius: radius.pill,
+    ...shadow.soft,
   },
-  primaryBtnText: { color: '#fff', fontWeight: '600', marginLeft: 4 },
+  primaryBtnText: { color: '#fff', fontWeight: '700', marginLeft: 4 },
+
   group: { marginBottom: spacing.lg },
   groupHeader: {
     flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm,
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.sm,
   },
-  groupDot: { width: 8, height: 8, borderRadius: 4, marginRight: spacing.sm },
-  groupTitle: { ...typography.captionStrong, color: colors.textSecondary, flex: 1 },
-  groupCount: { ...typography.caption, color: colors.textMuted, fontWeight: '600' },
+  groupEmoji: { fontSize: 16, marginRight: 8 },
+  groupTitle: { ...typography.captionStrong, flex: 1 },
+  groupCount: { ...typography.captionStrong, opacity: 0.8 },
   item: {
     backgroundColor: colors.card, padding: spacing.md, borderRadius: radius.sm,
     marginBottom: spacing.xs, borderWidth: 1, borderColor: colors.border,
     flexDirection: 'row', alignItems: 'center',
   },
-  itemTitle: { flex: 1, ...typography.body, color: colors.text },
+  itemTitle: { flex: 1, ...typography.body, color: colors.text, fontWeight: '500' },
   customBadge: {
-    ...typography.captionStrong, fontSize: 10, color: colors.accent,
-    backgroundColor: colors.accentSoft, paddingHorizontal: 6, paddingVertical: 2,
-    borderRadius: 4,
+    backgroundColor: colors.accentSoft, paddingHorizontal: 8, paddingVertical: 2,
+    borderRadius: radius.pill,
   },
+  customBadgeText: {
+    ...typography.captionStrong, fontSize: 10, color: colors.accent,
+    textTransform: 'uppercase',
+  },
+
   famCard: {
     backgroundColor: colors.card, padding: spacing.lg, borderRadius: radius.lg,
-    marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border,
+    marginBottom: spacing.md, ...shadow.soft,
   },
   famHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   famTitle: { ...typography.h2, color: colors.text, flex: 1 },
-  famPeriod: { ...typography.caption, color: colors.textMuted, fontWeight: '600' },
-  famReward: { ...typography.body, color: colors.textSecondary, marginTop: 4 },
-  famPct: { ...typography.caption, color: colors.textMuted, marginTop: 6 },
+  famPeriodBadge: {
+    backgroundColor: colors.accentSoft, paddingHorizontal: 10, paddingVertical: 4,
+    borderRadius: radius.pill,
+  },
+  famPeriodText: { ...typography.caption, color: colors.accent, fontWeight: '700' },
+  rewardBox: {
+    flexDirection: 'row', alignItems: 'center', marginTop: 10,
+    backgroundColor: colors.warningSoft, padding: 10, borderRadius: radius.sm,
+  },
+  rewardEmoji: { fontSize: 18, marginRight: 8 },
+  rewardText: { ...typography.body, color: colors.text, fontWeight: '600', flex: 1 },
+  famPct: { ...typography.caption, color: colors.textMuted, marginTop: 6, fontWeight: '600' },
+
   empty: { padding: spacing['2xl'], alignItems: 'center' },
-  emptyTitle: { ...typography.bodyStrong, color: colors.text, marginBottom: 4 },
+  emptyEmoji: { fontSize: 48, marginBottom: 12 },
+  emptyTitle: { ...typography.h2, color: colors.text, marginBottom: 4 },
   emptyText: { ...typography.body, color: colors.textMuted, textAlign: 'center' },
 });

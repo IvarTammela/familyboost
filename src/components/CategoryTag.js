@@ -1,14 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { categoryMeta, typography } from '../theme/colors';
+import { categoryMeta, typography, radius } from '../theme/colors';
 
-export default function CategoryTag({ categoryKey, size = 'sm' }) {
+export default function CategoryTag({ categoryKey, showEmoji = true }) {
   const cat = categoryMeta[categoryKey];
   if (!cat) return null;
   return (
-    <View style={[styles.wrap, size === 'md' && styles.md]}>
-      <View style={[styles.dot, { backgroundColor: cat.color }]} />
-      <Text style={[styles.label, { color: cat.color }]}>{cat.label.toUpperCase()}</Text>
+    <View style={[styles.wrap, { backgroundColor: cat.soft }]}>
+      {showEmoji && <Text style={styles.emoji}>{cat.emoji}</Text>}
+      <Text style={[styles.label, { color: cat.color }]}>{cat.label}</Text>
     </View>
   );
 }
@@ -18,15 +18,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
   },
-  md: { marginBottom: 4 },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 6,
-  },
-  label: {
-    ...typography.captionStrong,
-  },
+  emoji: { fontSize: 12, marginRight: 5 },
+  label: { ...typography.captionStrong, fontSize: 11 },
 });

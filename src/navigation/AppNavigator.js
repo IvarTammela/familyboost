@@ -21,45 +21,25 @@ export default function AppNavigator() {
       <Tab.Navigator
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: colors.accent,
+          tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.textMuted,
           tabBarStyle: {
             backgroundColor: colors.card,
             borderTopColor: colors.border,
-            borderTopWidth: 0.5,
-            height: 68,
+            borderTopWidth: 1,
+            height: 70,
             paddingBottom: 10,
-            paddingTop: 8,
+            paddingTop: 10,
           },
-          tabBarLabelStyle: { fontSize: 11, fontWeight: '600', letterSpacing: 0.2 },
+          tabBarLabelStyle: { fontSize: 11, fontWeight: '700', letterSpacing: 0.2 },
           tabBarIconStyle: { marginBottom: -2 },
         }}
       >
-        <Tab.Screen
-          name="Täna"
-          component={TodayScreen}
-          options={{ tabBarIcon: iconFor('today') }}
-        />
-        <Tab.Screen
-          name="Pere"
-          component={FamilyScreen}
-          options={{ tabBarIcon: iconFor('people') }}
-        />
-        <Tab.Screen
-          name="Edetabel"
-          component={LeaderboardScreen}
-          options={{ tabBarIcon: iconFor('trophy') }}
-        />
-        <Tab.Screen
-          name="Minu"
-          component={GoalsScreen}
-          options={{ tabBarIcon: iconFor('stats-chart') }}
-        />
-        <Tab.Screen
-          name="Ülesanded"
-          component={ChallengesScreen}
-          options={{ tabBarIcon: iconFor('list') }}
-        />
+        <Tab.Screen name="Täna" component={TodayScreen} options={{ tabBarIcon: iconFor('sunny') }} />
+        <Tab.Screen name="Pere" component={FamilyScreen} options={{ tabBarIcon: iconFor('people') }} />
+        <Tab.Screen name="Edetabel" component={LeaderboardScreen} options={{ tabBarIcon: iconFor('trophy') }} />
+        <Tab.Screen name="Minu" component={GoalsScreen} options={{ tabBarIcon: iconFor('star') }} />
+        <Tab.Screen name="Ülesanded" component={ChallengesScreen} options={{ tabBarIcon: iconFor('list-circle') }} />
       </Tab.Navigator>
     </NavigationContainer>
   );

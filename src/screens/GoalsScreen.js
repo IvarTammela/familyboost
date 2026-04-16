@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, categoryMeta, typography, radius, spacing } from '../theme/colors';
+import { colors, categoryMeta, typography, radius, spacing, shadow } from '../theme/colors';
 import { useStore } from '../data/store';
 import FormModal from '../components/FormModal';
 import { TextField, NumberField, CategoryPicker } from '../components/Field';
@@ -10,14 +10,18 @@ import CategoryTag from '../components/CategoryTag';
 import ProgressBar from '../components/ProgressBar';
 
 function GoalCard({ goal }) {
+  const cat = categoryMeta[goal.category];
   const pct = Math.min(100, Math.round((goal.progressDays / goal.periodDays) * 100));
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { borderLeftColor: cat.color }]}>
       <CategoryTag categoryKey={goal.category} />
       <Text style={styles.cardTitle}>{goal.challengeTitle}</Text>
-      <Text style={styles.cardReward}>Preemia: {goal.reward}</Text>
+      <View style={styles.rewardBox}>
+        <Text style={styles.rewardEmoji}>🎁</Text>
+        <Text style={styles.rewardText}>{goal.reward}</Text>
+      </View>
       <View style={{ marginTop: spacing.md }}>
-        <ProgressBar value={pct} color={categoryMeta[goal.category].color} />
+        <ProgressBar value={pct} color={cat.color} height={10} />
       </View>
       <Text style={styles.progressLabel}>{goal.progressDays}/{goal.periodDays} päeva · {pct}%</Text>
     </View>
@@ -26,13 +30,18 @@ function GoalCard({ goal }) {
 
 function StreakRow({ catKey, days }) {
   const cat = categoryMeta[catKey];
+  const fiery = days >= 3;
   return (
     <View style={styles.streakRow}>
-      <View style={[styles.streakDot, { backgroundColor: cat.color }]} />
+      <View style={[styles.streakBadge, { backgroundColor: cat.soft }]}>
+        <Text style={styles.streakEmoji}>{cat.emoji}</Text>
+      </View>
       <Text style={styles.streakLabel}>{cat.label}</Text>
-      <Text style={[styles.streakDays, days === 0 && styles.streakDaysEmpty]}>
-        {days > 0 ? `${days} p` : '—'}
-      </Text>
+      <View style={[styles.streakCount, days > 0 && { backgroundColor: fiery ? colors.warningSoft : colors.primarySoft }]}>
+        <Text style={[styles.streakDays, days === 0 && styles.streakDaysEmpty]}>
+          {days > 0 ? `${fiery ? '🔥 ' : ''}${days} p` : '—'}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -66,35 +75,38 @@ export default function GoalsScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.pageLabel}>MINU EDU</Text>
+            <Text style={styles.pageLabel}>⭐ MINU EDU</Text>
             <Text style={styles.title}>Eesmärgid ja seeriad</Text>
           </View>
           <TouchableOpacity
             style={styles.primaryBtn}
             onPress={() => setShowModal(true)}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
-            <Ionicons name="add" size={18} color="#fff" />
+            <Ionicons name="add" size={20} color="#fff" />
             <Text style={styles.primaryBtnText}>Eesmärk</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.card}>
+        <View style={styles.streaksCard}>
           <Text style={styles.sectionLabel}>SEERIAD KATEGOORIATE KAUPA</Text>
           {Object.entries(state.streaks).map(([k, v]) => (
             <StreakRow key={k} catKey={k} days={v} />
           ))}
         </View>
 
-        <Text style={styles.sectionTitle}>Aktiivsed eesmärgid</Text>
+        <Text style={styles.sectionTitle}>🎯 Aktiivsed eesmärgid</Text>
         {state.personalGoals.map((g) => (
           <GoalCard key={g.id} goal={g} />
         ))}
 
         {state.personalGoals.length === 0 && (
           <View style={styles.empty}>
+            <Text style={styles.emptyEmoji}>🌱</Text>
             <Text style={styles.emptyTitle}>Pole eesmärke</Text>
-            <Text style={styles.emptyText}>Sea üks eesmärk, et saada preemia harjumuse kujundamise eest</Text>
+            <Text style={styles.emptyText}>
+              Sea üks eesmärk, et saada preemia harjumuse kujundamise eest!
+            </Text>
           </View>
         )}
       </ScrollView>
@@ -109,7 +121,7 @@ export default function GoalsScreen() {
         <TextField label="Ülesanne" value={title} onChangeText={setTitle} placeholder="nt Sokid pesukorvi" />
         <CategoryPicker label="Kategooria" value={category} onChange={setCategory} />
         <NumberField label="Periood (päevades)" value={periodDays} onChangeText={setPeriodDays} placeholder="7" />
-        <TextField label="Preemia" value={reward} onChangeText={setReward} placeholder="nt Šokolaad" />
+        <TextField label="Preemia 🎁" value={reward} onChangeText={setReward} placeholder="nt Šokolaad" />
       </FormModal>
     </SafeAreaView>
   );
@@ -122,32 +134,55 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center',
     marginBottom: spacing.lg,
   },
-  pageLabel: { ...typography.captionStrong, color: colors.textMuted },
+  pageLabel: { ...typography.captionStrong, color: colors.primary },
   title: { ...typography.title, color: colors.text, marginTop: 2 },
   primaryBtn: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors.primary, paddingHorizontal: 14, paddingVertical: 10,
-    borderRadius: radius.sm,
+    backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 11,
+    borderRadius: radius.pill,
+    ...shadow.soft,
   },
-  primaryBtnText: { color: '#fff', fontWeight: '600', marginLeft: 4 },
-  card: {
+  primaryBtnText: { color: '#fff', fontWeight: '700', marginLeft: 4 },
+
+  streaksCard: {
     backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.lg,
-    marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.border,
+    marginBottom: spacing.lg, ...shadow.soft,
   },
   sectionLabel: { ...typography.captionStrong, color: colors.textMuted, marginBottom: spacing.md },
-  sectionTitle: { ...typography.h2, color: colors.text, marginBottom: spacing.md },
+  sectionTitle: { ...typography.h1, color: colors.text, marginBottom: spacing.md },
+
   streakRow: {
     flexDirection: 'row', alignItems: 'center', paddingVertical: 10,
     borderBottomWidth: 1, borderBottomColor: colors.divider,
   },
-  streakDot: { width: 8, height: 8, borderRadius: 4, marginRight: spacing.md },
-  streakLabel: { flex: 1, ...typography.body, color: colors.text },
-  streakDays: { ...typography.bodyStrong, color: colors.text },
-  streakDaysEmpty: { color: colors.textMuted, fontWeight: '400' },
-  cardTitle: { ...typography.bodyStrong, color: colors.text, fontSize: 17, marginTop: 8 },
-  cardReward: { ...typography.body, color: colors.textSecondary, marginTop: 2 },
-  progressLabel: { ...typography.caption, color: colors.textMuted, marginTop: 6 },
+  streakBadge: {
+    width: 36, height: 36, borderRadius: 18,
+    alignItems: 'center', justifyContent: 'center', marginRight: spacing.md,
+  },
+  streakEmoji: { fontSize: 18 },
+  streakLabel: { flex: 1, ...typography.body, color: colors.text, fontWeight: '600' },
+  streakCount: {
+    paddingHorizontal: 12, paddingVertical: 5, borderRadius: radius.pill,
+  },
+  streakDays: { ...typography.bodyStrong, color: colors.text, fontSize: 13 },
+  streakDaysEmpty: { color: colors.textMuted, fontWeight: '500' },
+
+  card: {
+    backgroundColor: colors.card, padding: spacing.lg, borderRadius: radius.lg,
+    marginBottom: spacing.md, borderLeftWidth: 4,
+    ...shadow.soft,
+  },
+  cardTitle: { ...typography.h2, color: colors.text, marginTop: 8, fontSize: 17 },
+  rewardBox: {
+    flexDirection: 'row', alignItems: 'center', marginTop: 8,
+    backgroundColor: colors.warningSoft, padding: 10, borderRadius: radius.sm,
+  },
+  rewardEmoji: { fontSize: 18, marginRight: 8 },
+  rewardText: { ...typography.body, color: colors.text, fontWeight: '600', flex: 1 },
+  progressLabel: { ...typography.caption, color: colors.textMuted, marginTop: 8, fontWeight: '600' },
+
   empty: { padding: spacing['2xl'], alignItems: 'center' },
-  emptyTitle: { ...typography.bodyStrong, color: colors.text, marginBottom: 4 },
+  emptyEmoji: { fontSize: 48, marginBottom: 12 },
+  emptyTitle: { ...typography.h2, color: colors.text, marginBottom: 4 },
   emptyText: { ...typography.body, color: colors.textMuted, textAlign: 'center' },
 });

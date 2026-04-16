@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, categoryMeta, typography, radius, spacing } from '../theme/colors';
+import { colors, categoryMeta, typography, radius, spacing, shadow } from '../theme/colors';
 import { useStore } from '../data/store';
 import CategoryTag from '../components/CategoryTag';
 import ProgressBar from '../components/ProgressBar';
@@ -14,9 +14,22 @@ function formatEstonianDate(d) {
   return `${days[d.getDay()]}, ${d.getDate()}. ${months[d.getMonth()]}`;
 }
 
+function encouragement(done, total) {
+  if (total === 0) return 'Alusta päeva!';
+  if (done === 0) return 'Lähme täna pihta! 💪';
+  if (done === total) return 'Võimas! Kõik tehtud 🎉';
+  if (done === total - 1) return 'Üks on veel! Sa suudad 🔥';
+  return 'Tubli, jätka samas vaimus ✨';
+}
+
 function ChallengeRow({ item, challenge, onToggle }) {
+  const cat = categoryMeta[challenge.category];
   return (
-    <TouchableOpacity onPress={onToggle} style={styles.row} activeOpacity={0.6}>
+    <TouchableOpacity
+      onPress={onToggle}
+      style={[styles.row, item.done && styles.rowDone, { borderLeftColor: cat.color }]}
+      activeOpacity={0.6}
+    >
       <View style={styles.rowLeft}>
         <CategoryTag categoryKey={challenge.category} />
         <Text style={[styles.rowTitle, item.done && styles.rowTitleDone]} numberOfLines={2}>
@@ -25,7 +38,7 @@ function ChallengeRow({ item, challenge, onToggle }) {
         </Text>
       </View>
       <View style={[styles.checkbox, item.done && styles.checkboxDone]}>
-        {item.done && <Ionicons name="checkmark" size={18} color="#fff" />}
+        {item.done && <Ionicons name="checkmark" size={20} color="#fff" />}
       </View>
     </TouchableOpacity>
   );
@@ -41,16 +54,21 @@ function FamilyTodayCard({ item, members, currentUserId }) {
     <View style={styles.famCard}>
       <View style={styles.famHeader}>
         <Text style={styles.famTitle}>{item.title}</Text>
-        <Text style={styles.famPeriod}>{item.periodDays} päeva</Text>
+        <View style={styles.famPeriodBadge}>
+          <Text style={styles.famPeriodText}>{item.periodDays} p</Text>
+        </View>
       </View>
-      <Text style={styles.famReward}>Preemia: {item.reward}</Text>
+      <View style={styles.famRewardBox}>
+        <Text style={styles.famRewardEmoji}>🎁</Text>
+        <Text style={styles.famReward}>{item.reward}</Text>
+      </View>
       <View style={{ marginTop: spacing.md }}>
-        <ProgressBar value={pct} color={colors.success} />
+        <ProgressBar value={pct} color={colors.success} height={10} />
       </View>
       <View style={styles.famFooter}>
         <Text style={styles.famFooterText}>Pere: {pct}%</Text>
-        <Text style={styles.famFooterText}>
-          Sinu: {myComplete ? 'valmis' : `${myDone}/${item.periodDays}`}
+        <Text style={[styles.famFooterText, myComplete && styles.famFooterDone]}>
+          Sinu: {myComplete ? '✓ valmis' : `${myDone}/${item.periodDays}`}
         </Text>
       </View>
     </View>
@@ -58,14 +76,18 @@ function FamilyTodayCard({ item, members, currentUserId }) {
 }
 
 function PersonalGoalCard({ goal }) {
+  const cat = categoryMeta[goal.category];
   const pct = Math.min(100, Math.round((goal.progressDays / goal.periodDays) * 100));
   return (
-    <View style={styles.goalCard}>
+    <View style={[styles.goalCard, { borderLeftColor: cat.color }]}>
       <CategoryTag categoryKey={goal.category} />
       <Text style={styles.goalTitle}>{goal.challengeTitle}</Text>
-      <Text style={styles.goalReward}>Preemia: {goal.reward}</Text>
+      <View style={styles.goalRewardBox}>
+        <Text style={styles.goalRewardEmoji}>🎁</Text>
+        <Text style={styles.goalReward}>{goal.reward}</Text>
+      </View>
       <View style={{ marginTop: spacing.md }}>
-        <ProgressBar value={pct} color={categoryMeta[goal.category].color} />
+        <ProgressBar value={pct} color={cat.color} height={10} />
       </View>
       <Text style={styles.goalLabel}>{goal.progressDays}/{goal.periodDays} päeva · {pct}%</Text>
     </View>
@@ -78,7 +100,8 @@ export default function TodayScreen() {
   const user = state.family.members.find((m) => m.id === state.currentUserId);
   const today = state.today ?? { items: [] };
   const items = today.items;
-  const remaining = items.filter((i) => !i.done).length;
+  const done = items.filter((i) => i.done).length;
+  const remaining = items.length - done;
 
   const bestStreak = useMemo(() => {
     const entries = Object.entries(state.streaks);
@@ -91,6 +114,7 @@ export default function TodayScreen() {
   );
   const activeFam = state.familyChallenges.filter((c) => c.status === 'active');
   const dateLabel = formatEstonianDate(new Date());
+  const allDone = items.length > 0 && remaining === 0;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -98,7 +122,7 @@ export default function TodayScreen() {
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
             <Text style={styles.dateLabel}>{dateLabel}</Text>
-            <Text style={styles.hello}>Tere, {user?.name}</Text>
+            <Text style={styles.hello}>Tere, {user?.name}! 👋</Text>
           </View>
           {tab === 'personal' && (
             <TouchableOpacity
@@ -106,7 +130,7 @@ export default function TodayScreen() {
               onPress={() => dispatch({ type: 'REGENERATE_TODAY' })}
               activeOpacity={0.7}
             >
-              <Ionicons name="refresh" size={20} color={colors.text} />
+              <Ionicons name="refresh" size={20} color={colors.primary} />
             </TouchableOpacity>
           )}
         </View>
@@ -122,21 +146,30 @@ export default function TodayScreen() {
 
         {tab === 'personal' && (
           <>
-            <View style={styles.summaryCard}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.summaryLabel}>TÄNA</Text>
-                <Text style={styles.summaryBig}>{items.length - remaining} / {items.length}</Text>
-                <Text style={styles.summarySub}>
-                  {remaining === 0 ? 'Kõik tehtud' : `${remaining} ülesannet jäänud`}
-                </Text>
+            <View style={[styles.heroCard, allDone && styles.heroCardDone]}>
+              <View style={styles.heroTopRow}>
+                <Text style={styles.heroEmoji}>{allDone ? '🎉' : '🚀'}</Text>
+                <Text style={styles.heroEncouragement}>{encouragement(done, items.length)}</Text>
               </View>
-              <View style={styles.summaryDivider} />
-              <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                <Text style={styles.summaryLabel}>PARIM SEERIA</Text>
-                <Text style={styles.summaryBig}>{bestStreak?.[1] ?? 0}<Text style={styles.summaryUnit}> p</Text></Text>
-                <Text style={styles.summarySub}>
-                  {bestStreak && bestStreak[1] > 0 ? categoryMeta[bestStreak[0]].label : '—'}
-                </Text>
+              <View style={styles.heroStats}>
+                <View style={styles.heroStat}>
+                  <Text style={styles.heroStatBig}>{done}<Text style={styles.heroStatSmall}>/{items.length}</Text></Text>
+                  <Text style={styles.heroStatLabel}>TÄNA TEHTUD</Text>
+                </View>
+                <View style={styles.heroDivider} />
+                <View style={styles.heroStat}>
+                  <Text style={styles.heroStatBig}>
+                    {bestStreak?.[1] ?? 0}<Text style={styles.heroStatSmall}> p</Text>
+                  </Text>
+                  <Text style={styles.heroStatLabel}>🔥 PARIM SEERIA</Text>
+                </View>
+              </View>
+              <View style={styles.heroProgress}>
+                <ProgressBar
+                  value={items.length > 0 ? (done / items.length) * 100 : 0}
+                  color="#fff"
+                  height={8}
+                />
               </View>
             </View>
 
@@ -157,7 +190,7 @@ export default function TodayScreen() {
             {myGoals.length > 0 && (
               <>
                 <Text style={[styles.sectionTitle, { marginTop: spacing['2xl'] }]}>
-                  Minu eesmärgid
+                  ⭐ Minu eesmärgid
                 </Text>
                 {myGoals.map((g) => <PersonalGoalCard key={g.id} goal={g} />)}
               </>
@@ -167,9 +200,10 @@ export default function TodayScreen() {
 
         {tab === 'family' && (
           <>
-            <Text style={styles.sectionTitle}>Pereülesanded</Text>
+            <Text style={styles.sectionTitle}>👪 Pereülesanded</Text>
             {activeFam.length === 0 && (
               <View style={styles.empty}>
+                <Text style={styles.emptyEmoji}>🌱</Text>
                 <Text style={styles.emptyTitle}>Pole aktiivseid pereülesandeid</Text>
                 <Text style={styles.emptyText}>Ava Ülesanded → Pereülesanded → + Lisa</Text>
               </View>
@@ -196,59 +230,85 @@ const styles = StyleSheet.create({
   dateLabel: { ...typography.caption, color: colors.textMuted, textTransform: 'uppercase' },
   hello: { ...typography.title, color: colors.text, marginTop: 2 },
   iconBtn: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: colors.border,
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center',
   },
-  summaryCard: {
-    flexDirection: 'row',
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
+
+  heroCard: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
     marginVertical: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...shadow.lifted,
   },
-  summaryDivider: {
-    width: 1, marginHorizontal: spacing.md, backgroundColor: colors.border,
-  },
-  summaryLabel: { ...typography.captionStrong, color: colors.textMuted, marginBottom: 4 },
-  summaryBig: { fontSize: 28, fontWeight: '700', color: colors.text, letterSpacing: -0.5 },
-  summaryUnit: { fontSize: 16, color: colors.textMuted, fontWeight: '500' },
-  summarySub: { ...typography.body, color: colors.textMuted, marginTop: 2 },
-  sectionTitle: { ...typography.h2, color: colors.text, marginBottom: spacing.md },
+  heroCardDone: { backgroundColor: colors.success },
+  heroTopRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md },
+  heroEmoji: { fontSize: 24, marginRight: 8 },
+  heroEncouragement: { ...typography.bodyStrong, color: '#fff', fontSize: 16, flex: 1 },
+  heroStats: { flexDirection: 'row', marginTop: 4 },
+  heroStat: { flex: 1 },
+  heroStatBig: { fontSize: 36, fontWeight: '800', color: '#fff', letterSpacing: -1 },
+  heroStatSmall: { fontSize: 18, fontWeight: '600', opacity: 0.85 },
+  heroStatLabel: { ...typography.captionStrong, color: '#fff', opacity: 0.85, marginTop: 2 },
+  heroDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.3)', marginHorizontal: spacing.lg },
+  heroProgress: { marginTop: spacing.lg },
+
+  sectionTitle: { ...typography.h1, color: colors.text, marginBottom: spacing.md, marginTop: spacing.sm },
+
   row: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: colors.card, padding: spacing.lg,
-    borderRadius: radius.md, marginBottom: spacing.sm,
-    borderWidth: 1, borderColor: colors.border,
+    borderRadius: radius.lg, marginBottom: spacing.sm,
+    borderLeftWidth: 4,
+    ...shadow.soft,
   },
+  rowDone: { backgroundColor: colors.successSoft },
   rowLeft: { flex: 1, paddingRight: spacing.md },
-  rowTitle: { ...typography.bodyStrong, color: colors.text, marginTop: 8 },
-  rowTitleDone: { textDecorationLine: 'line-through', color: colors.textMuted, fontWeight: '400' },
+  rowTitle: { ...typography.bodyStrong, color: colors.text, marginTop: 8, fontSize: 16 },
+  rowTitleDone: { textDecorationLine: 'line-through', color: colors.textMuted, fontWeight: '500' },
   checkbox: {
-    width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, borderColor: colors.borderStrong,
+    width: 32, height: 32, borderRadius: 16, borderWidth: 2, borderColor: colors.borderStrong,
     alignItems: 'center', justifyContent: 'center',
   },
   checkboxDone: { backgroundColor: colors.success, borderColor: colors.success },
+
   famCard: {
-    backgroundColor: colors.card, padding: spacing.lg, borderRadius: radius.md,
-    marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.card, padding: spacing.lg, borderRadius: radius.lg,
+    marginBottom: spacing.md, ...shadow.soft,
   },
   famHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  famTitle: { ...typography.bodyStrong, color: colors.text, flex: 1 },
-  famPeriod: { ...typography.caption, color: colors.textMuted, fontWeight: '600' },
-  famReward: { ...typography.body, color: colors.textSecondary, marginTop: 4 },
-  famFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.sm },
-  famFooterText: { ...typography.caption, color: colors.textMuted },
-  goalCard: {
-    backgroundColor: colors.card, padding: spacing.lg, borderRadius: radius.md,
-    marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border,
+  famTitle: { ...typography.h2, color: colors.text, flex: 1 },
+  famPeriodBadge: {
+    backgroundColor: colors.accentSoft, paddingHorizontal: 10, paddingVertical: 4,
+    borderRadius: radius.pill,
   },
-  goalTitle: { ...typography.bodyStrong, color: colors.text, marginTop: 8 },
-  goalReward: { ...typography.body, color: colors.textSecondary, marginTop: 2 },
-  goalLabel: { ...typography.caption, color: colors.textMuted, marginTop: 6 },
+  famPeriodText: { ...typography.caption, color: colors.accent, fontWeight: '700' },
+  famRewardBox: {
+    flexDirection: 'row', alignItems: 'center', marginTop: 8,
+    backgroundColor: colors.warningSoft, padding: 10, borderRadius: radius.sm,
+  },
+  famRewardEmoji: { fontSize: 18, marginRight: 8 },
+  famReward: { ...typography.body, color: colors.text, fontWeight: '600', flex: 1 },
+  famFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.sm },
+  famFooterText: { ...typography.caption, color: colors.textMuted, fontWeight: '600' },
+  famFooterDone: { color: colors.success, fontWeight: '700' },
+
+  goalCard: {
+    backgroundColor: colors.card, padding: spacing.lg, borderRadius: radius.lg,
+    marginBottom: spacing.md, borderLeftWidth: 4,
+    ...shadow.soft,
+  },
+  goalTitle: { ...typography.h2, color: colors.text, marginTop: 8 },
+  goalRewardBox: {
+    flexDirection: 'row', alignItems: 'center', marginTop: 8,
+    backgroundColor: colors.warningSoft, padding: 10, borderRadius: radius.sm,
+  },
+  goalRewardEmoji: { fontSize: 18, marginRight: 8 },
+  goalReward: { ...typography.body, color: colors.text, fontWeight: '600', flex: 1 },
+  goalLabel: { ...typography.caption, color: colors.textMuted, marginTop: 8, fontWeight: '600' },
+
   empty: { padding: spacing['2xl'], alignItems: 'center' },
-  emptyTitle: { ...typography.bodyStrong, color: colors.text, marginBottom: 4 },
+  emptyEmoji: { fontSize: 48, marginBottom: 12 },
+  emptyTitle: { ...typography.bodyStrong, color: colors.text, marginBottom: 4, fontSize: 16 },
   emptyText: { ...typography.body, color: colors.textMuted, textAlign: 'center' },
 });
